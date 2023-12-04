@@ -1,0 +1,236 @@
+<template>
+  <div class="main-page">
+    <div class='header' >
+      <text class='span1'>Ask your questions</text>
+      
+    </div>
+    <div class="chat">
+      <list class="msg_list" id="list">
+        <list-item type="image" class="userList"><image class="image" src="{{image}}"></image></list-item>
+        <list-item for="{{msgs}}" type="text" class="{{$item.source === 'user' ? 'userList' : 'serverList'}}"><text  class="{{$item.source === 'user' ? 'user' : 'server'}}">{{$item.text}}</text></list-item>
+      </list>
+    </div>
+    <div class='below'>
+      <input type="text" placeholder='What do you want to know?' value="{{msg}}" onchange="updateValue"></input>
+      <div class='clear-btn' onclick='clearMsg'></div>
+      <div class='asr-image1' onclick='startAsr'></div>
+      <div class="send" onclick="sendMsg"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+  import prompt from '@system.prompt'
+  import fetch from '@system.fetch'
+  import upload from '@system.request'
+export default {
+  private: {
+    msg:'',
+    msgs:[],
+    nameBackUp:'', 
+  },
+  protected: {
+      image: ''
+    },
+
+  onInit() {
+    // this.initAsr()
+    
+    
+  },
+  onShow() {
+    this.msgs.push({"text":"rate this photo","source":"user"});
+    this.uploadToServer(this.image)
+  },
+  initAsr() {
+    let that = this
+    asr.oncompleteresult = ({ result }) => {
+      this.eventName = this.nameBackUp + `${result}`
+    }
+  },
+  startAsr() {
+    let that = this
+    this.nameBackUp = this.eventName
+    asr.start({
+      success: function () {
+        //多调用几遍使震动明显一些
+        vibrator.vibrate({ mode: 'short' })
+        vibrator.vibrate({ mode: 'short' })
+        vibrator.vibrate({ mode: 'short' })
+      },
+      fail: function (data, code) {
+        that.msg = `start fail, code=${code}, data=${data}`
+      }
+    })
+  },
+
+  updateValue(evt) {
+    this.msg = evt.value
+  },
+  clearMsg() {
+    this.msg = ''
+  },
+  sendMsg(){
+    if(this.msg===''){
+      prompt.showToast({message:'Question must not ne null!!!'})
+    }
+    else{
+      let text=this.msg
+      this.msgs.push({"text":text,"source":"user"});
+      this.clearMsg();
+      this.sendToServer(text)
+      this.$element('list').scrollTo({index:this.msgs.length,smooth:true})
+    }
+    
+  },
+  sendToServer(message){
+    let that=this
+      fetch.fetch({
+        url:'http://10.29.212.114:5000/predict',
+        method:'POST',
+        data:message,
+        
+        responseType:'json',
+      }).then(function(response){
+        console.log(response)
+        return response.data.data;
+      }).then(function(data){
+        console.log(data)
+        that.msgs.push(data)
+      }).catch(function(err){
+        console.error(err);
+      });
+  },
+  uploadToServer(img){
+    let that=this
+    var task=upload.upload({
+      url:'http://10.29.212.114:5000/upload',
+      files:[{
+        uri:img,
+        name:'image',
+        filename:"we.jpg",
+      }],
+      responseType:'json',
+      success:function(data){
+        console.log(data.data)
+        that.msgs.push(data.data)
+      },
+      fail:function(data,code){
+        console.log(data)
+      }
+    })
+  },
+  onDestroy() {
+    console.info("ssssssssssssss")
+  },
+  
+
+}
+</script>
+
+<style lang="less">
+@import '../../assets/styles/font.css';
+.main-page {
+  background-color: rgb(243, 245, 250);
+  flex-direction: column;
+  
+}
+.header {
+  display: flex;
+  height: 150px;
+  width: 750px;
+  background-color: #ffffff;
+  flex-direction: column;
+  align-items: center;
+  
+  .span1 {
+    font-size: 40px;
+    color: #000000;
+    font-weight: bold;
+    padding-top: 50px;
+    
+    font-family: myfont, serif;
+    
+  }
+
+  
+}
+.chat {
+  
+  flex: 1;
+  flex-direction: column;
+  height: 90%;
+  
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.userList {
+  margin-right: 20px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.serverList {
+  margin-left: 20px;
+  justify-content: flex-start;
+  align-items: center;
+}
+.image{
+  height: 500px;
+  resize-mode: contain;
+  background-image: url("../../assets/images/msgbox_send.9.png");
+}
+.user {
+  margin-bottom: 40px;
+  font-size: 40px;
+  font-family: myfont, serif;
+  background-image: url("../../assets/images/msgbox_send.9.png");
+}
+
+.server {
+  margin-bottom: 40px;
+  font-size: 40px;
+  font-family: myfont, serif;
+  background-image: url("../../assets/images/msgbox_receive.9.png");
+}  
+.below {
+  display: flex;
+  height: 100px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  border: 5px solid rgb(238, 240, 245);
+  flex-direction: row;
+  align-items: center;
+  > input {
+    flex-grow: 1;
+    padding: 10px 30px;
+  }
+}
+.asr-image1 {
+  width: 40px;
+  height: 40px;
+  margin: 30px;
+  border-width: 0px;
+  flex-shrink: 0;
+  background-image: url("../../assets/images/asr.png");
+  background-position: center;
+}
+.clear-btn {
+  width: 40px;
+  height: 40px;
+  margin: 30px 0px 30px 0px;
+  border-width: 0px;
+  flex-shrink: 0;
+  background-image: url("../../assets/images/cancle.png");
+  background-position: center;
+}
+.send {
+  width: 40px;
+  height: 40px;
+  margin: 30px 0px 30px 0px;
+  border-width: 0px;
+  flex-shrink: 0;
+  background-image: url("../../assets/images/send.png");
+  background-position: center;
+}
+</style>
