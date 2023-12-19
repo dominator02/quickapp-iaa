@@ -46,8 +46,11 @@ export default {
     // this.msgs.push({"text":"rate this photo","source":"user"});
     //上传服务器
     this.savePic()
-    this.uploadToServer()
     
+    
+  },
+  onReady() {
+    this.uploadToServer()
   },
   onShow() {
     
