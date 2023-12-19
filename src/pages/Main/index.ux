@@ -142,6 +142,7 @@ export default {
     flex: 1;
     margin-top: 10px;
     margin-bottom: 10px;
+    align-items: center;
     .camera{
       background-image: url('../../assets/images/camera.png');
       background-position: center;
@@ -155,6 +156,7 @@ export default {
     .image{
       height: 100%;
       width: 100%;
+      object-fit: contain;
     }
   }
   .below {

@@ -19,9 +19,10 @@
 </template>
 
 <script>
+import router from '@system.router'
 import prompt from '@system.prompt'
 import fetch from '@system.fetch'
-import upload from '@system.request'
+import request from '@system.request'
 import asr from '@service.asr'
 import storage from '@system.storage'
 import vibrator from '@system.vibrator'
@@ -44,7 +45,8 @@ export default {
     this.initAsr()
     // this.msgs.push({"text":"rate this photo","source":"user"});
     //上传服务器
-    this.uploadToServer(this.image)
+    this.savePic()
+    this.uploadToServer()
     
   },
   onShow() {
@@ -114,11 +116,9 @@ export default {
         console.error(err);
       });
   },
-  //上传图片
-  uploadToServer(img){
-    this.disabled=true
+   //保存图片
+  savePic(){
     let that=this
-    //保存图片
     var timestamp = Date.now();
     var fe=that.image.split('.').pop()//后缀名
     file.copy({
@@ -132,13 +132,18 @@ export default {
           console.log(`handling fail, code = ${code}`)
         }
       })
+  },
+  //上传图片
+  uploadToServer(){
+    this.disabled=true
+    let that=this
     
-    var task=upload.upload({
+    request.upload({
       url:'http://10.112.201.86:5000/upload',
       files:[{
-        uri:img,
+        uri:that.image,
         name:'image',
-        filename:img.split('/').pop(),
+        filename:that.image.split('/').pop(),
       }],
       responseType:'json',
       success:function(data){
@@ -148,7 +153,7 @@ export default {
         
       },
       fail:function(data,code){
-        that.msgs.push({"text":"Failed to connect to the server!","source":"server"})
+        that.msgs.push({"text":`Failed to connect to the server!`,"source":"server"})
         console.log(data)
       }
     })
@@ -171,6 +176,9 @@ export default {
             },
             fail:function(data,code){
               console.log(`handling fail, code = ${code}`)
+            },
+            complete:function(){
+                router.back()
             }
           })   
         }
@@ -187,6 +195,9 @@ export default {
             },
             fail:function(data,code){
               console.log(`handling fail, code = ${code}`)
+            },
+            complete:function(){
+                router.back()
             }
           })
           
@@ -198,7 +209,7 @@ export default {
       
     })
     
-    return false;//确保保存完再关闭页面
+    return true;//确保保存完再关闭页面
   },
   onDestroy() {
     
