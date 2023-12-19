@@ -10,17 +10,19 @@
     </div>
     <div class='below'>
 
-      <input class='reset-btn' type="button"  onclick="clearImage()"  if="{{display}}"></input>
-      <input class='chat-btn' type="button"  onclick="startChat()"  if="{{display}}"></input>
-      <input class='history-btn' type="button"  onclick="showHistory()"  if="{{display}}"></input>
+      <div class='{{display ? "reset-btn" : "reset-btn-disabled"}}' onclick="clearImage()" disabled="{{!display}}" ></div>
+      <div class='{{display ? "chat-btn" : "chat-btn-disabled"}}'  onclick="startChat()"  disabled="{{!display}}"></div>
+      <div class='history-btn' onclick="showHistory()" ></div>
     </div>
   </div>
 </template>
 
 <script>
-  import router from '@system.router'
-  import prompt from '@system.prompt'
-  import media from '@system.media'
+import router from '@system.router'
+import prompt from '@system.prompt'
+import media from '@system.media'
+import storage from '@system.storage'
+import file from '@system.file'
 export default {
   private: {
     display: false
@@ -30,31 +32,37 @@ export default {
   },
 
   onInit() {
+    // storage.clear()
+    // file.rmdir({
+    //   uri:"internal://files/image",
+    //   recursive:true
+    // })
     this.$page.setTitleBar({ text: 'IAA App' })
   },
   onShow() {
-    const data = this.$app.getAppData('Image')
-    if (data && data.destPageName === 'Main') {
-      // 获取回传给本页面的数据
-      this.image = data.params.image
-    }
     if(this.image!=''){
       this.display=true
     }
-
+    
+    
   },
+  //问答
   startChat(){
     router.push({
         uri: 'pages/Chat',
         params: { image: this.image }
     })
   },
+  //重新拍照
   clearImage(){
     this.image=''
     this.display=false
   },
   showHistory(){
-
+     router.push({
+        uri: 'pages/History',
+        
+    })
   },
   shotOrSelect(){
     let this_=this
@@ -71,6 +79,7 @@ export default {
       ],
       success:function(data){
         if(data.index==0){
+          //拍照
           media.takePhoto({
             success:function(data){
               this_.image=data.uri
@@ -82,6 +91,7 @@ export default {
           })
         }
         else{
+          //选取照片
           media.pickImage({
             success:function(data){
               this_.image=data.uri
@@ -107,6 +117,26 @@ export default {
 .main-page {
   background-color: rgb(243, 245, 250);
   flex-direction: column;
+  .header {
+    height: 200px;
+    width: 750px;
+    background-color: #ffffff;
+    flex-direction: column;
+    
+    .span1 {
+      font-size: 40px;
+      color: #000000;
+      font-weight: bold;
+      padding: 45px 0px 0px 100px;
+      font-family: myfont, serif;
+    }
+    .span2 {
+      font-size: 30px;
+      color: #808080;
+      padding: 20px 0px 0px 50px;
+      font-family: myfont, serif;
+    }
+  }
   .image_div{
     height: 90%;
     flex: 1;
@@ -140,11 +170,25 @@ export default {
       background-position: center;
       
     }
+    .reset-btn-disabled {
+      height: 100px;
+      width: 100px;
+      background-image: url("../../assets/images/reset.png");
+      background-position: center;
+      opacity: 0.3
+    }
     .chat-btn {
       height: 100px;
       width: 100px;
       background-image: url("../../assets/images/chat.png");
       background-position: center;
+    }
+    .chat-btn-disabled {
+      height: 100px;
+      width: 100px;
+      background-image: url("../../assets/images/chat.png");
+      background-position: center;
+      opacity: 0.3
     }
     .history-btn {
       height: 100px;
@@ -156,24 +200,5 @@ export default {
   }
   
 }
-.header {
-  height: 200px;
-  width: 750px;
-  background-color: #ffffff;
-  flex-direction: column;
-  
-  .span1 {
-    font-size: 40px;
-    color: #000000;
-    font-weight: bold;
-    padding: 45px 0px 0px 100px;
-    font-family: myfont, serif;
-  }
-  .span2 {
-    font-size: 30px;
-    color: #808080;
-    padding: 20px 0px 0px 50px;
-    font-family: myfont, serif;
-  }
-}
+
 </style>

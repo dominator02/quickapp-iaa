@@ -1,0 +1,146 @@
+<template>
+  <div class="main-page">
+    <div class='header' >
+      <text class='span1'>History</text>
+      <text class='span2'>——choose one to see detail</text>
+    </div>
+    <div class="history_div">
+      <text class='span3' if="{{!images.length>0}}">暂无记录</text>
+      <list class="history_list" >
+        <list-item for="{{images}}" type="list-item" class="list-item">
+            <div class="item-container">
+               <image class="image" src="{{$item.url}}"  onclick="{{showDetail($idx)}}"></image>
+            </div>
+        </list-item>
+      </list>
+    </div>
+    <div class='below'>
+
+  
+    </div>
+  </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+import router from '@system.router'
+export default {
+  private: {
+    images:[],
+    msgs:[],
+  },
+  protected: {
+     
+  },
+
+  onInit() {},
+  onShow() {
+    let that = this
+    this.loadLists(function(data){
+       if (data != '') {
+        let list = JSON.parse(data)
+        console.log(list)
+        that.images=list.images
+        that.msgs=list.msgs//显示记录的图片
+        console.log(that.images)
+       }
+       else{
+         console.log("历史为空")
+       }
+       
+    })
+    console.log(this.images)
+  },
+  //跳转详情页
+  showDetail(idx){
+    router.push({
+        uri: 'pages/HistoryDetail',
+        params: { "image": this.images[idx].url ,"msgs":this.msgs[idx].msgs,"idx":idx}
+    })
+  },
+  //list需读取时调用，需传入callback回调
+  loadLists(dataCallback = function () { }) {
+    let that = this
+    storage.get({
+      key: 'msg',
+      success: function (data) {
+        dataCallback(data)
+      },
+      fail: function (data, code) {
+        console.error(`handling fail, code = ${code}`)
+      }
+    })
+  },
+}
+</script>
+
+<style lang="less">
+@import '../../assets/styles/font.css';
+.main-page {
+  background-color: rgb(243, 245, 250);
+  flex-direction: column;
+  .history_div{
+    height: 90%;
+    flex: 1;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 2.5%;
+    margin-right: 2.5%;
+    flex-direction: column;
+    align-items: center;
+    .history_list{
+      columns: 2;      
+      .list-item {       
+        justify-content: center;
+        .item-container{
+          width: 90%;
+          margin-bottom: 20px; /* 设置下边距 */
+          
+          .image{
+            width: 100%;
+            resize-mode: contain;
+        }
+        }
+        
+      }
+    }
+    .span3 {
+      font-size: 50px;
+      color: #808080;
+      
+      /* padding: 20px 0px 0px 100px; */
+      font-family: myfont, serif;
+    }
+  }
+  .below {
+    display: flex;
+    
+    height: 10%;
+    justify-content: space-around;
+    align-items: center;
+    
+  }
+  
+}
+.header {
+  height: 200px;
+  width: 750px;
+  background-color: #ffffff;
+  flex-direction: column;
+  
+  .span1 {
+    font-size: 40px;
+    color: #000000;
+    font-weight: bold;
+    padding: 45px 0px 0px 100px;
+    font-family: myfont, serif;
+  }
+  .span2 {
+    font-size: 30px;
+    color: #808080;
+    padding: 20px 0px 0px 150px;
+    font-family: myfont, serif;
+  }
+  
+}
+</style>

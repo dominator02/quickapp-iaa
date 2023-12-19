@@ -1,0 +1,142 @@
+<template>
+  <div class="main-page">
+    <div class='header' >
+      <text class='span1'>Historical questions</text>
+      
+    </div>
+    <div class="chat">
+      <list class="msg_list" id="list">
+        <list-item type="image" class="userList"><image class="image" src="{{image}}"></image></list-item>
+        <list-item for="{{messages}}" type="text" class="{{$item.source === 'user' ? 'userList' : 'serverList'}}"><text  class="{{$item.source === 'user' ? 'user' : 'server'}}">{{$item.text}}</text></list-item>
+      </list>
+    </div>
+    <div class='below'>
+      <text class='span1' onclick="deleteHistory">删除该条记录</text>
+    </div>
+  </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+import router from '@system.router'
+import file from '@system.file'
+export default {
+  private: {
+    messages:[]
+  },
+  protected: {
+    image:'',
+    msgs: [],
+    idx:''
+  },
+
+  onInit() {
+
+  },
+  onShow() {
+    this.messages=JSON.parse(this.msgs)//处理信息
+    this.messages.push({"text":"暂不支持通过历史记录继续提问","source":"server"});
+  },
+  //删除存储中该条记录
+  deleteHistory(){
+    let that=this
+    storage.get({
+      key:'msg',
+      success:function(data){
+        if(data!=''){
+          let list=JSON.parse(data)
+          list.images.splice(that.idx,1)
+          list.msgs.splice(that.idx,1)
+          storage.set({
+            key:'msg',
+            value:list,
+            success:function(data){
+              //删除存储在本地的图片
+              file.delete({
+                uri:that.image
+              })
+            },
+            fail:function(data,code){
+              console.log(`handling fail, code = ${code}`)
+            }
+          })
+        }
+        router.back()//返回
+      },
+      fail:function(data,code){
+      }
+    })
+  }
+}
+</script>
+
+<style lang="less">
+@import '../../assets/styles/font.css';
+.main-page {
+  background-color: rgb(243, 245, 250);
+  flex-direction: column; 
+}
+.header {
+  display: flex;
+  height: 150px;
+  width: 750px;
+  background-color: #ffffff;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; 
+}
+.span1 {
+  font-size: 40px;
+  color: #000000;
+  font-weight: bold;
+  font-family: myfont, serif;
+}
+.chat {
+  flex: 1;
+  flex-direction: column;
+  height: 90%;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.userList {
+  margin-right: 20px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.serverList {
+  margin-left: 20px;
+  justify-content: flex-start;
+  align-items: center;
+}
+.image{
+  height: 500px;
+  resize-mode: contain;
+  background-image: url("../../assets/images/msgbox_send.9.png");
+}
+.user {
+  margin-bottom: 40px;
+  font-size: 40px;
+  font-family: myfont, serif;
+  background-image: url("../../assets/images/msgbox_send.9.png");
+}
+
+.server {
+  margin-bottom: 40px;
+  font-size: 40px;
+  font-family: myfont, serif;
+  background-image: url("../../assets/images/msgbox_receive.9.png");
+}  
+.below {
+  display: flex;
+  height: 100px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  border: 5px solid rgb(238, 240, 245);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+}
+
+</style>

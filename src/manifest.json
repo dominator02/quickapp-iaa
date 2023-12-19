@@ -20,6 +20,21 @@
     },
     {
       "name": "system.media"
+    },
+    {
+      "name": "service.asr"
+    },
+    {
+      "name": "system.vibrator"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.request"
+    },
+    { 
+      "name": "system.file" 
     }
   ],
   "permissions": [
@@ -40,7 +55,11 @@
       "pages/Chat": {
         "component": "index"
       },
-      "pages/Camera": {
+      
+      "pages/History": {
+        "component": "index"
+      },
+      "pages/HistoryDetail": {
         "component": "index"
       }
     }

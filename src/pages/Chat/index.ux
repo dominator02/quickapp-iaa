@@ -2,7 +2,6 @@
   <div class="main-page">
     <div class='header' >
       <text class='span1'>Ask your questions</text>
-      
     </div>
     <div class="chat">
       <list class="msg_list" id="list">
@@ -14,43 +13,54 @@
       <input type="text" placeholder='What do you want to know?' value="{{msg}}" onchange="updateValue"></input>
       <div class='clear-btn' onclick='clearMsg'></div>
       <div class='asr-image1' onclick='startAsr'></div>
-      <div class="send" onclick="sendMsg"></div>
+      <div class="send" onclick="sendMsg" disabled="{{disabled}}"></div>
     </div>
   </div>
 </template>
 
 <script>
-  import prompt from '@system.prompt'
-  import fetch from '@system.fetch'
-  import upload from '@system.request'
+import prompt from '@system.prompt'
+import fetch from '@system.fetch'
+import upload from '@system.request'
+import asr from '@service.asr'
+import storage from '@system.storage'
+import vibrator from '@system.vibrator'
+import file from '@system.file'
 export default {
   private: {
     msg:'',
-    msgs:[],
-    nameBackUp:'', 
+    msgs:[{"text":"rate this photo","source":"user"}],
+    msgBackUp:'', 
+    disabled:false,
+    cookie:'',
+    msgs_init:[],
   },
   protected: {
       image: ''
     },
 
   onInit() {
-    // this.initAsr()
-    
+    //初始化asr
+    this.initAsr()
+    // this.msgs.push({"text":"rate this photo","source":"user"});
+    //上传服务器
+    this.uploadToServer(this.image)
     
   },
   onShow() {
-    this.msgs.push({"text":"rate this photo","source":"user"});
-    this.uploadToServer(this.image)
+    
+    // this.$forceUpdate()//强制刷新
+    
   },
   initAsr() {
     let that = this
     asr.oncompleteresult = ({ result }) => {
-      this.eventName = this.nameBackUp + `${result}`
+      this.msg = this.msgBackUp + `${result}`
     }
   },
   startAsr() {
     let that = this
-    this.nameBackUp = this.eventName
+    this.msgBackUp = this.msg
     asr.start({
       success: function () {
         //多调用几遍使震动明显一些
@@ -77,51 +87,122 @@ export default {
     else{
       let text=this.msg
       this.msgs.push({"text":text,"source":"user"});
-      this.clearMsg();
-      this.sendToServer(text)
-      this.$element('list').scrollTo({index:this.msgs.length,smooth:true})
+      this.clearMsg();//清除文本框内容
+      this.sendToServer(text)//将问题发送到服务器
+      this.$element('list').scrollTo({index:this.msgs.length,smooth:true})//滚动到最后一项
     }
     
   },
   sendToServer(message){
+    this.disabled=true
     let that=this
       fetch.fetch({
-        url:'http://10.29.212.114:5000/predict',
+        url:'http://10.112.201.86:5000/predict',
         method:'POST',
         data:message,
-        
+        header:{
+          'Cookie': that.cookie//通过cookie访问特定的session
+        },
         responseType:'json',
       }).then(function(response){
-        console.log(response)
+        that.cookie=response.data.headers['Set-Cookie'];//保存cookie
         return response.data.data;
       }).then(function(data){
-        console.log(data)
-        that.msgs.push(data)
+        that.msgs.push(data)//获取并显示服务器返回的信息
+        that.disabled=false
       }).catch(function(err){
         console.error(err);
       });
   },
+  //上传图片
   uploadToServer(img){
+    this.disabled=true
     let that=this
+    //保存图片
+    var timestamp = Date.now();
+    var fe=that.image.split('.').pop()//后缀名
+    file.copy({
+        srcUri: that.image,
+        dstUri: 'internal://files/image/'+timestamp+'.'+fe,
+        success: function(uri) {
+          console.log(`copy success: ${uri}`)
+          that.image=uri
+        },
+        fail: function(data, code) {
+          console.log(`handling fail, code = ${code}`)
+        }
+      })
+    
     var task=upload.upload({
-      url:'http://10.29.212.114:5000/upload',
+      url:'http://10.112.201.86:5000/upload',
       files:[{
         uri:img,
         name:'image',
-        filename:"we.jpg",
+        filename:img.split('/').pop(),
       }],
       responseType:'json',
       success:function(data){
-        console.log(data.data)
-        that.msgs.push(data.data)
+        that.cookie = data.headers['Set-Cookie'];//保存cookie
+        that.msgs.push(data.data)//获取并显示服务器返回的信息
+        that.disabled=false
+        
       },
       fail:function(data,code){
+        that.msgs.push({"text":"Failed to connect to the server!","source":"server"})
         console.log(data)
       }
     })
   },
+  //返回时保存记录
+  onBackPress() {
+    let that=this
+    storage.get({
+      key:'msg',
+      success:function(data){
+        if(data!=''){
+          let list=JSON.parse(data)
+          list.images.push({"url":that.image})
+          list.msgs.push({"msgs":that.msgs})
+          storage.set({
+            key:'msg',
+            value:list,
+            success:function(data){
+              console.log(list)
+            },
+            fail:function(data,code){
+              console.log(`handling fail, code = ${code}`)
+            }
+          })   
+        }
+        else{
+          //第一次保存
+          let list={"images":[],"msgs":[]}
+          list.images.push({"url":that.image})
+          list.msgs.push({"msgs":that.msgs})
+          storage.set({
+            key:'msg',
+            value:list,
+            success:function(data){
+              console.log(list)
+            },
+            fail:function(data,code){
+              console.log(`handling fail, code = ${code}`)
+            }
+          })
+          
+        }
+      },
+      fail:function(data,code){
+        console.error(data)
+      }
+      
+    })
+    
+    return false;//确保保存完再关闭页面
+  },
   onDestroy() {
-    console.info("ssssssssssssss")
+    
+    
   },
   
 
@@ -142,7 +223,6 @@ export default {
   background-color: #ffffff;
   flex-direction: column;
   align-items: center;
-  
   .span1 {
     font-size: 40px;
     color: #000000;
@@ -150,10 +230,7 @@ export default {
     padding-top: 50px;
     
     font-family: myfont, serif;
-    
   }
-
-  
 }
 .chat {
   
@@ -181,6 +258,7 @@ export default {
 }
 .user {
   margin-bottom: 40px;
+  margin-left: 10px;
   font-size: 40px;
   font-family: myfont, serif;
   background-image: url("../../assets/images/msgbox_send.9.png");
@@ -188,6 +266,7 @@ export default {
 
 .server {
   margin-bottom: 40px;
+  margin-right: 10px;
   font-size: 40px;
   font-family: myfont, serif;
   background-image: url("../../assets/images/msgbox_receive.9.png");
